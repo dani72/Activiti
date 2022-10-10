@@ -24,7 +24,7 @@ public class BeanManagerLookup {
   public static BeanManager localInstance;
 
   /** provide a custom jndi lookup name */
-  public static String jndiName;
+  public static String jndiName = "java:comp/BeanManager";
 
   public static BeanManager getBeanManager() {
     if (localInstance != null) {
@@ -35,28 +35,11 @@ public class BeanManagerLookup {
 
   private static BeanManager lookupBeanManagerInJndi() {
 
-    if (jndiName != null) {
       try {
-        return (BeanManager) InitialContext.doLookup(jndiName);
+        return (BeanManager) InitialContext.doLookup( "java:comp/BeanManager");
       } catch (NamingException e) {
         throw new ActivitiException("Could not lookup beanmanager in jndi using name: '" + jndiName + "'.", e);
       }
-    }
 
-    try {
-      // in an application server
-      return (BeanManager) InitialContext.doLookup("java:comp/BeanManager");
-    } catch (NamingException e) {
-      // silently ignore
-    }
-
-    try {
-      // in a servlet container
-      return (BeanManager) InitialContext.doLookup("java:comp/env/BeanManager");
-    } catch (NamingException e) {
-      // silently ignore
-    }
-
-    throw new ActivitiException("Could not lookup beanmanager in jndi. If no jndi is avalable, set the beanmanger to the 'localInstance' property of this class.");
   }
 }

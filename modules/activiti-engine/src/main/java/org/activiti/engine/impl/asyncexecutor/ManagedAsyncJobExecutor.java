@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedAsyncJobExecutor extends DefaultAsyncJobExecutor {
 
-  private static Logger log = LoggerFactory.getLogger(ManagedAsyncJobExecutor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ManagedAsyncJobExecutor.class);
 
   protected ManagedThreadFactory threadFactory;
 
@@ -42,18 +42,19 @@ public class ManagedAsyncJobExecutor extends DefaultAsyncJobExecutor {
     this.threadFactory = threadFactory;
   }
 
+  @Override
   protected void initAsyncJobExecutionThreadPool() {
     if (threadFactory == null) {
-      log.warn("A managed thread factory was not found, falling back to self-managed threads");
+      logger.warn("A managed thread factory was not found, falling back to self-managed threads");
       super.initAsyncJobExecutionThreadPool();
     } else {
       if (threadPoolQueue == null) {
-        log.info("Creating thread pool queue of size {}", queueSize);
+        logger.info("Creating thread pool queue of size {}", queueSize);
         threadPoolQueue = new ArrayBlockingQueue<Runnable>(queueSize);
       }
 
       if (executorService == null) {
-        log.info("Creating executor service with corePoolSize {}, maxPoolSize {} and keepAliveTime {}", corePoolSize, maxPoolSize, keepAliveTime);
+        logger.info("Creating executor service with corePoolSize {}, maxPoolSize {} and keepAliveTime {}", corePoolSize, maxPoolSize, keepAliveTime);
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, threadPoolQueue, threadFactory);
         threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -61,7 +62,19 @@ public class ManagedAsyncJobExecutor extends DefaultAsyncJobExecutor {
 
       }
 
-      startJobAcquisitionThread();
+//      startJobAcquisitionThread();
     }
   }
+  
+  @Override
+ protected void startJobAcquisitionThread() {
+    if (asyncJobAcquisitionThread == null) {
+        asyncJobAcquisitionThread = this.threadFactory.newThread( asyncJobsDueRunnable);
+//      asyncJobAcquisitionThread = new Thread(asyncJobsDueRunnable);
+    }
+    
+    logger.info( "Thread state : {}.", asyncJobAcquisitionThread.getState());
+    
+    asyncJobAcquisitionThread.start();
+  }  
 }

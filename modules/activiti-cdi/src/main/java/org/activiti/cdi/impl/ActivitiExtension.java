@@ -60,16 +60,16 @@ public class ActivitiExtension implements Extension {
   }
 
   public void afterDeploymentValidation(@Observes AfterDeploymentValidation event, BeanManager beanManager) {
-    try {
+//    try {
       logger.info("Initializing activiti-cdi.");
       // initialize the process engine
-      ProcessEngine processEngine = lookupProcessEngine(beanManager);
+//      ProcessEngine processEngine = lookupProcessEngine(beanManager);
       // deploy the processes if engine was set up correctly
-      deployProcesses(processEngine);
-    } catch (Exception e) {
+//      deployProcesses(processEngine);
+//    } catch (Exception e) {
       // interpret engine initialization problems as definition errors
-      event.addDeploymentProblem(e);
-    }
+//      event.addDeploymentProblem(e);
+//    }
   }
 
   protected ProcessEngine lookupProcessEngine(BeanManager beanManager) {
@@ -115,10 +115,10 @@ public class ActivitiExtension implements Extension {
   }
 
   public void beforeShutdown(@Observes BeforeShutdown event) {
-    if (processEngineLookup != null) {
-      processEngineLookup.ungetProcessEngine();
-      processEngineLookup = null;
-    }
+//    if (processEngineLookup != null) {
+//      processEngineLookup.ungetProcessEngine();
+//      processEngineLookup = null;
+//    }
     logger.info("Shutting down activiti-cdi");
   }
 
