@@ -15,66 +15,65 @@ package org.activiti.engine.impl.asyncexecutor;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import javax.enterprise.concurrent.ManagedThreadFactory;
-
+import org.activiti.engine.ActivitiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Simple JSR-236 async job executor to allocate threads through {@link ManagedThreadFactory}. Falls back to {@link AsyncExecutor} when a thread factory was not referenced in configuration.
- * 
- * In Java EE 7, all application servers should provide access to a {@link ManagedThreadFactory}.
- * 
+ * Simple JSR-236 async job executor to allocate threads through
+ * {@link ManagedThreadFactory}. Fails if a thread factory is not referenced in configuration.
+ *
+ * In Java EE 7, all application servers should provide access to a
+ * {@link ManagedThreadFactory}.
+ *
  * @author Dimitris Mandalidis
  */
 public class ManagedAsyncJobExecutor extends DefaultAsyncJobExecutor {
 
-  private static final Logger logger = LoggerFactory.getLogger(ManagedAsyncJobExecutor.class);
+    private static final Logger logger = LoggerFactory.getLogger(ManagedAsyncJobExecutor.class);
 
-  protected ManagedThreadFactory threadFactory;
+    protected ManagedThreadFactory threadFactory;
 
-  public ManagedThreadFactory getThreadFactory() {
-    return threadFactory;
-  }
-
-  public void setThreadFactory(ManagedThreadFactory threadFactory) {
-    this.threadFactory = threadFactory;
-  }
-
-  @Override
-  protected void initAsyncJobExecutionThreadPool() {
-    if (threadFactory == null) {
-      logger.warn("A managed thread factory was not found, falling back to self-managed threads");
-      super.initAsyncJobExecutionThreadPool();
-    } else {
-      if (threadPoolQueue == null) {
-        logger.info("Creating thread pool queue of size {}", queueSize);
-        threadPoolQueue = new ArrayBlockingQueue<Runnable>(queueSize);
-      }
-
-      if (executorService == null) {
-        logger.info("Creating executor service with corePoolSize {}, maxPoolSize {} and keepAliveTime {}", corePoolSize, maxPoolSize, keepAliveTime);
-
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, threadPoolQueue, threadFactory);
-        threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executorService = threadPoolExecutor;
-
-      }
-
-//      startJobAcquisitionThread();
+    public ManagedThreadFactory getThreadFactory() {
+        return threadFactory;
     }
-  }
-  
-  @Override
- protected void startJobAcquisitionThread() {
-    if (asyncJobAcquisitionThread == null) {
-        asyncJobAcquisitionThread = this.threadFactory.newThread( asyncJobsDueRunnable);
-//      asyncJobAcquisitionThread = new Thread(asyncJobsDueRunnable);
+
+    public void setThreadFactory(ManagedThreadFactory threadFactory) {
+        this.threadFactory = threadFactory;
     }
-    
-    logger.info( "Thread state : {}.", asyncJobAcquisitionThread.getState());
-    
-    asyncJobAcquisitionThread.start();
-  }  
+
+    @Override
+    protected void initAsyncJobExecutionThreadPool() {
+        if (threadFactory == null) {
+            throw new ActivitiException( "No thread factory configured. Aborting initialization.");
+        } 
+
+        if (threadPoolQueue == null) {
+            logger.info("Creating thread pool queue of size {}", queueSize);
+            threadPoolQueue = new ArrayBlockingQueue<>(queueSize);
+        }
+
+        if (executorService == null) {
+            logger.info("Creating executor service with corePoolSize {}, maxPoolSize {} and keepAliveTime {}", corePoolSize, maxPoolSize, keepAliveTime);
+
+            ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MILLISECONDS, threadPoolQueue, threadFactory);
+            threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+            executorService = threadPoolExecutor;
+        }
+    }
+
+    @Override
+    protected void startJobAcquisitionThread() {
+        if (asyncJobAcquisitionThread == null) {
+            logger.info( "Starting Job acquisition.");
+
+            asyncJobAcquisitionThread = this.threadFactory.newThread( asyncJobsDueRunnable);
+            
+            asyncJobAcquisitionThread.start();
+        }
+        else {
+            logger.warn( "Job acquisition already started - called twice?");
+        }
+    }
 }

@@ -20,26 +20,19 @@ import org.activiti.engine.ActivitiException;
 
 public class BeanManagerLookup {
 
-  /** holds a local beanManager if no jndi is available */
-  public static BeanManager localInstance;
-
   /** provide a custom jndi lookup name */
-  public static String jndiName = "java:comp/BeanManager";
+  public static final String BEAN_MANAGER_JNDI_NAME = "java:comp/BeanManager";
 
   public static BeanManager getBeanManager() {
-    if (localInstance != null) {
-      return localInstance;
-    }
     return lookupBeanManagerInJndi();
   }
 
   private static BeanManager lookupBeanManagerInJndi() {
-
       try {
-        return (BeanManager) InitialContext.doLookup( "java:comp/BeanManager");
-      } catch (NamingException e) {
-        throw new ActivitiException("Could not lookup beanmanager in jndi using name: '" + jndiName + "'.", e);
+        return (BeanManager) InitialContext.doLookup( BEAN_MANAGER_JNDI_NAME);
+      } 
+      catch (NamingException e) {
+        throw new ActivitiException("Could not lookup beanmanager in jndi using name: '" + BEAN_MANAGER_JNDI_NAME + "'.", e);
       }
-
   }
 }
